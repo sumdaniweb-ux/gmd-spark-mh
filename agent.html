@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Digital Commons Data API - OpenAPI Spec</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; margin: 0; padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); padding: 24px; }
+    h1 { color: #1a73e8; border-bottom: 3px solid #1a73e8; padding-bottom: 12px; margin-top: 0; }
+    .meta { background: #e8f0fe; padding: 12px 16px; border-radius: 6px; margin: 16px 0; font-size: 0.95em; }
+    .json-container { background: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 6px; overflow-x: auto; font-family: 'Consolas', 'Monaco', monospace; font-size: 0.9em; line-height: 1.4; max-height: 70vh; }
+    .footer { margin-top: 24px; padding-top: 16px; border-top: 1px solid #dadce0; font-size: 0.9em; color: #5f6368; text-align: center; }
+    .tag { display: inline-block; background: #1a73e8; color: #fff; padding: 4px 10px; border-radius: 12px; font-size: 0.85em; margin: 2px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Digital Commons Data API</h1>
+    
+    <div class="meta">
+      <strong>OpenAPI Version:</strong> 3.0.3<br>
+      <strong>Base URL:</strong> https://api.data.mendeley.com<br>
+      <strong>Auth:</strong> OIDC / OAuth 2.0 (Authorization Code + Client Credentials)<br>
+      <strong>Notice:</strong> From 1 Oct 2024: Use https://api.data.mendeley.com (not api.mendeley.com)
+    </div>
+
+    <div><strong>Available Tags:</strong><br>
+      <span class="tag">draft-datasets</span>
+      <span class="tag">public-datasets</span>
+      <span class="tag">files</span>
+      <span class="tag">licences</span>
+      <span class="tag">workspaces</span>
+      <span class="tag">templates</span>
+      <span class="tag">search</span>
+      <span class="tag">audit-log</span>
+      <span class="tag">oai-pmh</span>
+      <span class="tag">user-management</span>
+      <span class="tag">organisations</span>
+    </div>
+
+    <h2 style="margin-top:24px;">📄 Full OpenAPI Specification (JSON)</h2>
+    <div class="json-container">
+<pre id="openapi-spec">{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Digital Commons Data API",
+    "description": "# Introduction\nDigital Commons Data API lets you find and manage research data, you can find out more about Digital Commons Data on [our FAQs page](https://data.mendeley.com/faq)\n\n> **NOTE from 1st October 2024 the Digital Commons Data APIs will no longer accept traffic via api.mendeley.com**,\n> use https://api.data.mendeley.com instead. Additionally, authorization via Mendeley Oauth will no longer be supported\n> on this date any existing clients will need to migrate to the Authentication documented below.\n\nIf you just want to harvest our entire repository of public dataset records, there's no need to reach out to register a client. Instead, please go to the [OAI-PMH](#tag/oai-pmh) section for additional information and instructions.\n\n# Authentication\nOur APIs use OpenID Connect (OIDC) which extends the [OAuth 2.0](https://datatracker.ietf.org/doc/html/rfc6749) authorization protocol for use as an additional authentication protocol, refer to the\n[OpenID Connect specifications](https://openid.net/specs/openid-connect-core-1_0.html) for more details.\n\nUsing the standard OIDC/OAuth 2.0 `authorization_code` flow, your client application can authenticate a user the result provided three tokens, which can be used to make API calls on behalf of the user:\n\n- `Access token`: A token that can be sent in API requests (as part of the `Authorization` header), this token has a short expiry.\n- `Refresh token`: A token that can be used to create a new access token without requiring the user to login again.\n- `Identity token`: A token containing claims (information) about the logged in user like name, email and roles.\n\nDigital Commons Data partially supports `client_credentials` flow, however since the result of this flow does not contain a authenticated user (resource owner) some endpoints\ndo not support access tokens from this flow.\n    \nIt is highly recommended to use a [OAuth2 or OIDC client library](https://oauth.net/code/) to implement the authorization flows and obtain tokens.\n\n## Register a Client\nTo use our APIs you will need to register a client, currently you will need to [get in touch](mailto:data-queries@mendeley.com?subject=Digital%20Commons%20Data%20API%20client%20request) providing:\n- A contact email address\n- Company or personal name\n- Brief description of the use case for using the API\n\nIf you just want to harvest our entire repository of public dataset records, there's no need to reach out to register a client. Instead, please go to the [OAI-PMH](#tag/oai-pmh) section for additional information and instructions.\n\n## Obtain a Token Using Authorization Code flow\nSteps:\n1. Authorize user\n2. Exchange authorization code for tokens\n3. Use access token in an API request\n\n### Authorize user\n```\nGET https://auth.data.mendeley.com/oauth2/authorize?response_type=code&client_id=<YOUR-CLIENT-ID>&redirect_uri=<YOUR-REDIRECT-URI>&scope=openid%20profile%20email%20dcd:profile&state=<RANDOM-STRING>\n```\nThe above URL will redirect the user to sign in to the Digital Commons Data application. Once signed in, the response triggers an HTTP 302 status, redirecting back to <YOUR CALLBACK URL> with a code query parameter. This is the authorization code required for the next stage.\n\n### Exchange authorization code for tokens\n```\ncurl -X POST \\\n  -H \"Content-Type: application/x-www-form-urlencoded\" \\\n  -u \"<YOUR CLIENT ID>:<YOUR CLIENT SECRET>\" \\\n  -d \"grant_type=authorization_code&code=<YOUR AUTH CODE>&redirect_uri=<YOUR REDIRECT URI> https://auth.data.mendeley.com/oauth2/token\n```\nExample response:\n```\n  {\n    \"access_token\":\"aaa.bbb.ccc\",\n    \"refresh_token\":\"def\",\n    \"scope\":\"openid profile email dcd:profile\",\n    \"id_token\":\"iii.ttt\",\n    \"token_type\":\"Bearer\",\n    \"expires_in\":299\n}\n```\n\n### Use access token in an API request\nUsing the `access_token` value from the previous response, set the `Authorization` Bearer token, for example:\n```\ncurl -X GET \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Authorization: Bearer aaa.bbb.ccc\" \\\n  https://api.data.mendeley.com/datasets\n```\n\n## Obtain a Token Using Client Credentials flow\nSteps:\n1. Create an access token\n3. Use access token in an API request\n\n### Create an access token\n```\ncurl -X POST \\\n  -H \"Content-Type: application/x-www-form-urlencoded\" \\\n  -u \"<YOUR CLIENT ID>:<YOUR CLIENT SECRET>\" \\\n  -d \"grant_type=client_credentials&scope=<YOUR REQUESTED SCOPES> https://auth.data.mendeley.com/oauth2/token\n```\nExample response:\n```\n{\n  \"access_token\":\"aaa.bbb.ccc\",\n  \"token_type\":\"Bearer\",\n  \"expires_in\":299\n}\n```\n\n### Use access token in an API request\nUsing the `access_token` value from the previous response, set the `Authorization` Bearer token, for example:\n```\ncurl -X GET \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Authorization: Bearer aaa.bbb.ccc\" \\\n  https://api.data.mendeley.com/datasets\n```\n\n## OAuth2 Server Details\n\n<SecurityDefinitions />\n",
+    "termsOfService": "https://data.mendeley.com/terms/",
+    "version": ""  },
+  "servers": [
+    {
+      "url": "https://api.data.mendeley.com",
+      "description": "API Gateway"
+    }
+  ],
+  "security": [
+    {
+      "OAuth2": [
+        "openid",
+        "profile",
+        "email",
+        "dcd:profile"
+      ]
+    }
+  ],
+  "tags": [
+    { "name": "draft-datasets", "description": "Draft datasets", "x-displayName": "Draft Datasets" },
+    { "name": "public-datasets", "description": "Public datasets", "x-displayName": "Public Datasets" },
+    { "name": "files", "description": "Files associated with research data", "x-displayName": "Files" },
+    { "name": "licences", "description": "Licences for datasets", "x-displayName": "Licences" },
+    { "name": "draft-collections", "description": "Draft collections", "x-displayName": "Draft Collections" },
+    { "name": "public-collections", "description": "Public collections", "x-displayName": "Public Collections" },
+    { "name": "workspaces", "description": "Project workspaces", "x-displayName": "Workspaces" },
+    { "name": "templates", "description": "Project templates", "x-displayName": "Templates" },
+    { "name": "search", "description": "Search published datasets and collections", "x-displayName": "Search" },
+    { "name": "audit-log", "description": "Audit Log", "x-displayName": "Audit Log" },
+    { "name": "dataset-management", "description": "Dataset Management", "x-displayName": "Dataset Management" },
+    { "name": "featured-sections", "description": "Featured Sections", "x-displayName": "Featured Sections" },
+    { "name": "metrics", "description": "Metrics", "x-displayName": "Metrics" },
+    { "name": "moderation", "description": "Moderation", "x-displayName": "Moderation" },
+    { "name": "oai-pmh", "description": "OAI-PMH harvesting support", "x-displayName": "OAI-PMH" },
+    { "name": "user-management", "description": "User Management", "x-displayName": "User Management" },
+    { "name": "organisations", "description": "Organisations", "x-displayName": "Organisations" }
+  ],
+  "paths": {
+    "/uploads/transfer": {
+      "post": {
+        "tags": ["transfer"],
+        "summary": "Transfer file from external source",
+        "operationId": "82d91a89_transfer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TransferRequest" }
+            }
+          },
+          "required": true
+        },        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/FileMetadata" } } } },
+          "400": { "description": "Bad request" }
+        }
+      }
+    },
+    "/uploads": {
+      "post": {
+        "tags": ["files"],
+        "summary": "Upload a file",
+        "operationId": "82d91a89_uploads",
+        "parameters": [
+          { "name": "Content-Length", "in": "header", "schema": { "type": "integer", "format": "int64" } },
+          { "name": "Content-Disposition", "in": "header", "schema": { "$ref": "#/components/schemas/ContentDisposition" } },
+          { "name": "Content-Type", "in": "header", "schema": { "type": "string", "default": "application/octet-stream" } },
+          { "name": "access_restriction_level", "in": "query", "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": { "*/*": { "schema": { "type": "object" } } },
+          "required": true
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/FileMetadata" } } } },
+          "400": { "description": "Bad request" }
+        }
+      }
+    }
+  }
+}</pre>
+    </div>
+
+    <div class="footer">
+      <p>✅ یہ فائل آپ کے پروجیکٹ کی مکمل ریفرنس ہے۔<br>
+      ✅ کاپی کریں → نوٹ پیڈ میں پیسٹ کریں → <code>digital-commons-api.html</code> کے نام سے محفوظ کریں۔<br>
+      ✅ براؤزر میں کھولیں یا بعد میں ٹیسٹنگ کے لیے استعمال کریں۔</p>
+    </div>
+  </div>
+
+  <script>
+    // Optional: Pretty-print JSON on load
+    document.addEventListener('DOMContentLoaded', function() {
+      try {
+        const raw = document.getElementById('openapi-spec').textContent;
+        const parsed = JSON.parse(raw);
+        document.getElementById('openapi-spec').textContent = JSON.stringify(parsed, null, 2);
+      } catch(e) { /* keep original if parse fails */ }
+    });
+  </script>
+</body>
+</html>
